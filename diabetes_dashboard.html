@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diabetes Model Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: sans-serif; background: #f4f4f4; padding: 24px; color: #222; }
+  h1 { font-size: 22px; font-weight: 500; margin-bottom: 20px; text-align: center; }
+  .metric-row { display: grid; grid-template-columns: repeat(4,1fr); gap: 12px; margin-bottom: 20px; }
+  .metric { background: #fff; border-radius: 8px; border: 1px solid #e0e0e0; padding: 16px; text-align: center; }
+  .metric-label { font-size: 12px; color: #888; margin-bottom: 4px; }
+  .metric-value { font-size: 24px; font-weight: 500; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .card { background: #fff; border-radius: 12px; border: 1px solid #e0e0e0; padding: 16px 20px; }
+  .card-title { font-size: 14px; font-weight: 500; color: #555; margin-bottom: 12px; text-align: center; }
+  .legend { display: flex; gap: 16px; justify-content: center; margin-bottom: 8px; font-size: 12px; color: #666; }
+  .legend span { display: flex; align-items: center; gap: 4px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+</style>
+</head>
+<body>
+<h1>Diabetes Model Dashboard</h1>
+
+<div class="metric-row">
+  <div class="metric"><div class="metric-label">Total patients</div><div class="metric-value">154</div></div>
+  <div class="metric"><div class="metric-label">Correct</div><div class="metric-value" style="color:#2e7d32">118</div></div>
+  <div class="metric"><div class="metric-label">Wrong</div><div class="metric-value" style="color:#c62828">36</div></div>
+  <div class="metric"><div class="metric-label">Accuracy</div><div class="metric-value">76.6%</div></div>
+</div>
+
+<div class="grid">
+  <div class="card">
+    <p class="card-title">Model accuracy on test data</p>
+    <div style="position:relative;height:240px"><canvas id="c1"></canvas></div>
+  </div>
+  <div class="card">
+    <p class="card-title">Confusion matrix</p>
+    <div style="position:relative;height:240px"><canvas id="c2"></canvas></div>
+  </div>
+  <div class="card">
+    <p class="card-title">Glucose vs BMI by outcome</p>
+    <div class="legend">
+      <span><span class="dot" style="background:#e07060"></span>No diabetes</span>
+      <span><span class="dot" style="background:#4a90c4"></span>Diabetes</span>
+    </div>
+    <div style="position:relative;height:220px"><canvas id="c3"></canvas></div>
+  </div>
+  <div class="card">
+    <p class="card-title">Feature importance (logistic regression coefficients)</p>
+    <div style="position:relative;height:240px"><canvas id="c4"></canvas></div>
+  </div>
+</div>
+
+<script>
+new Chart(document.getElementById('c1'), {
+  type: 'bar',
+  data: { labels: ['Correct','Wrong'], datasets: [{ data:[118,36], backgroundColor:['#2e7d32','#c62828'], borderWidth:0 }] },
+  options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false} }, scales:{ y:{beginAtZero:true}, x:{grid:{display:false}} } }
+});
+
+new Chart(document.getElementById('c2'), {
+  type: 'bar',
+  data: {
+    labels: ['No Diabetes (Predicted)','Diabetes (Predicted)'],
+    datasets: [
+      { label:'No Diabetes (True)', data:[83,16], backgroundColor:['#0d47a1cc','#bbdefbcc'], borderWidth:0 },
+      { label:'Diabetes (True)',    data:[20,35], backgroundColor:['#e3f2fdcc','#5c8fc4cc'], borderWidth:0 }
+    ]
+  },
+  options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:true, position:'bottom', labels:{font:{size:11}} } }, scales:{ y:{beginAtZero:true}, x:{grid:{display:false}} } }
+});
+
+const noDiab = [[44,25],[60,33],[65,24],[68,45],[70,22],[72,30],[75,28],[78,35],[80,37],[82,40],[85,38],[85,55],[88,30],[90,36],[92,32],[95,25],[98,34],[100,46],[102,36],[105,28],[108,33],[110,44],[112,50],[115,45],[118,40],[120,35],[122,28],[125,42],[128,65],[130,38],[132,44],[135,40],[138,35],[140,42],[142,45],[145,38],[148,30],[150,44],[155,53],[160,52],[162,35],[165,48],[168,30],[170,44],[175,42],[178,48],[180,40],[182,59],[185,38],[190,35],[195,48],[200,43]];
+const diab =   [[58,25],[62,33],[65,45],[68,30],[70,45],[72,25],[75,30],[78,28],[80,46],[82,38],[85,33],[88,25],[88,45],[90,30],[92,38],[95,35],[98,40],[100,45],[102,39],[105,30],[108,37],[110,40],[112,38],[115,25],[118,35],[120,44],[122,38],[125,30],[128,57],[130,40],[132,35],[135,38],[138,42],[140,30],[142,38],[145,35],[148,32],[150,38],[152,42],[155,30],[158,38],[160,41],[162,36],[165,30],[168,44],[170,35],[172,38],[175,44],[178,26],[180,35],[185,30],[190,35],[198,37]];
+
+new Chart(document.getElementById('c3'), {
+  type: 'scatter',
+  data: {
+    datasets: [
+      { label:'No Diabetes', data:noDiab.map(p=>({x:p[0],y:p[1]})), backgroundColor:'#e0706099', pointRadius:4 },
+      { label:'Diabetes',    data:diab.map(p=>({x:p[0],y:p[1]})),   backgroundColor:'#4a90c499', pointRadius:4 }
+    ]
+  },
+  options: {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{display:false} },
+    scales:{
+      x:{ title:{display:true,text:'Glucose'} },
+      y:{ title:{display:true,text:'BMI'} }
+    }
+  }
+});
+
+new Chart(document.getElementById('c4'), {
+  type: 'bar',
+  data: {
+    labels: ['Pregnancies','Glucose','BloodPressure','SkinThickness','Insulin','BMI','DiabetesPedigreeFunction','Age'],
+    datasets: [{
+      data: [0.07, 0.035, -0.06, -0.005, 0.001, 0.11, 0.59, 0.03],
+      backgroundColor: [0.07,0.035,-0.06,-0.005,0.001,0.11,0.59,0.03].map(v => v >= 0 ? '#e07060cc' : '#4a90c4cc'),
+      borderWidth: 0
+    }]
+  },
+  options: {
+    indexAxis: 'y', responsive:true, maintainAspectRatio:false,
+    plugins:{ legend:{display:false}, tooltip:{callbacks:{label:ctx=>' Coefficient: '+ctx.parsed.x.toFixed(3)}} },
+    scales:{ x:{}, y:{ticks:{font:{size:11}}, grid:{display:false}} }
+  }
+});
+</script>
+</body>
+</html>
