@@ -25,4 +25,4 @@ pip install matplotlib numpy
 python diabetes_dashboard.py
 
 ## 📬 Connect
-LinkedIn: linkedin.com/in/savithri
+LinkedIn: www.linkedin.com/in/dasarisavithri
